@@ -1,0 +1,54 @@
+FROM jabref:base-env
+
+ARG BEFORE_COMMIT
+ARG AFTER_COMMIT
+
+ENV PROJECT_DIR=/home/myuser/jabref
+ENV APP_NAME=jabref
+ENV MAIN_BRANCH=main
+
+SHELL ["/bin/bash", "-lc"]
+USER myuser
+WORKDIR /home/myuser
+
+# ---------- Clone once ----------
+RUN git clone --recurse-submodules https://github.com/JabRef/jabref.git ${PROJECT_DIR}
+
+# ================================
+# ========== BUILD BEFORE =========
+# ================================
+WORKDIR ${PROJECT_DIR}
+
+RUN git fetch --all \
+ && git checkout ${MAIN_BRANCH} \
+ && git pull \
+ && git checkout ${BEFORE_COMMIT}
+
+# Build (matches: ./gradlew :jabgui:jpackage)
+RUN ./gradlew :jabgui:jpackage
+
+# Collect BEFORE artifact (match Python logic)
+# Python:
+# base_path = jabgui/build/packages
+# build_src = jabgui/build/packages/ubuntu-22.04
+RUN mv ${PROJECT_DIR}/jabgui/build/packages/ubuntu-22.04 \
+       ${PROJECT_DIR}/jabgui/build/packages/${APP_NAME}-${BEFORE_COMMIT}
+
+# ================================
+# ========== BUILD AFTER ==========
+# ================================
+WORKDIR ${PROJECT_DIR}
+
+RUN git checkout ${MAIN_BRANCH} \
+ && git pull \
+ && git checkout ${AFTER_COMMIT}
+
+# Clean to avoid cross-contamination
+RUN rm -rf ${PROJECT_DIR}/jabgui/build/packages/ubuntu-22.04 || true
+
+# Rebuild
+RUN ./gradlew :jabgui:jpackage
+
+# Collect AFTER artifact (same contract)
+RUN mv ${PROJECT_DIR}/jabgui/build/packages/ubuntu-22.04 \
+       ${PROJECT_DIR}/jabgui/build/packages/${APP_NAME}-${AFTER_COMMIT}

@@ -1,0 +1,47 @@
+FROM zettlr:base-env
+
+ARG BEFORE_COMMIT
+ARG AFTER_COMMIT
+
+ENV PROJECT_DIR=/home/myuser/Zettlr
+
+SHELL ["/bin/bash", "-lc"]
+USER myuser
+WORKDIR /home/myuser
+
+# ---------- Clone once ----------
+RUN git clone https://github.com/Zettlr/Zettlr.git ${PROJECT_DIR}
+
+# ================================
+# ========== BUILD BEFORE =========
+# ================================
+WORKDIR ${PROJECT_DIR}
+
+RUN git fetch --all \
+ && git checkout ${BEFORE_COMMIT}
+
+RUN yarn install --immutable
+RUN yarn package
+
+# Collect BEFORE artifact (match runtime contract)
+RUN mkdir -p ${PROJECT_DIR}/out \
+ && find ${PROJECT_DIR}/out -maxdepth 1 -type d -name "Zettlr-linux-*" \
+    -exec mv {} ${PROJECT_DIR}/out/Zettlr-${BEFORE_COMMIT} \;
+
+# ================================
+# ========== BUILD AFTER ==========
+# ================================
+RUN git checkout ${AFTER_COMMIT}
+
+# Clean out to avoid cross-contamination
+RUN rm -rf ${PROJECT_DIR}/out/Zettlr-linux-* || true
+
+RUN yarn install --immutable
+RUN yarn package
+
+# Collect AFTER artifact (same contract)
+RUN mkdir -p ${PROJECT_DIR}/out \
+ && find ${PROJECT_DIR}/out -maxdepth 1 -type d -name "Zettlr-linux-*" \
+    -exec mv {} ${PROJECT_DIR}/out/Zettlr-${AFTER_COMMIT} \;
+
+

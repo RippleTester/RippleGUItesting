@@ -1,0 +1,45 @@
+FROM godot:base-env
+
+ARG BEFORE_COMMIT
+ARG AFTER_COMMIT
+
+ENV PROJECT_DIR=/home/myuser/godot
+ENV APP_NAME=godot
+
+SHELL ["/bin/bash", "-lc"]
+USER myuser
+WORKDIR /home/myuser
+
+# ---------- Clone once ----------
+RUN git clone https://github.com/godotengine/godot.git ${PROJECT_DIR}
+
+# ================================
+# ========== BUILD BEFORE =========
+# ================================
+WORKDIR ${PROJECT_DIR}
+
+RUN git fetch --all \
+ && git checkout ${BEFORE_COMMIT}
+
+RUN scons platform=linuxbsd
+
+# Rename + move exactly like Python
+RUN find ${PROJECT_DIR}/bin -maxdepth 1 -type f -name "godot.linuxbsd.editor.*" -print -quit \
+ && mv ${PROJECT_DIR}/bin/godot.linuxbsd.editor.* ${PROJECT_DIR}/bin/godot \
+ && mv ${PROJECT_DIR}/bin ${PROJECT_DIR}/godot-${BEFORE_COMMIT}
+
+# ================================
+# ========== BUILD AFTER ==========
+# ================================
+WORKDIR ${PROJECT_DIR}
+
+RUN git checkout ${AFTER_COMMIT}
+
+# Clean previous bin (because it was moved)
+RUN mkdir -p ${PROJECT_DIR}/bin
+
+RUN scons platform=linuxbsd
+
+RUN find ${PROJECT_DIR}/bin -maxdepth 1 -type f -name "godot.linuxbsd.editor.*" -print -quit \
+ && mv ${PROJECT_DIR}/bin/godot.linuxbsd.editor.* ${PROJECT_DIR}/bin/godot \
+ && mv ${PROJECT_DIR}/bin ${PROJECT_DIR}/godot-${AFTER_COMMIT}

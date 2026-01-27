@@ -1,0 +1,123 @@
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ------------------------------------------------------------
+# 1) Base environment: Xfce, VNC, Xvfb, utilities
+#    Remove screen lockers and power managers
+# ------------------------------------------------------------
+RUN apt-get update && apt-get install -y \
+    xfce4 xfce4-goodies \
+    x11vnc xvfb xdotool wmctrl x11-apps \
+    imagemagick \
+    sudo software-properties-common \
+    && apt-get remove -y light-locker xfce4-screensaver xfce4-power-manager || true \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------------
+# 1.5) UTF-8 locale
+# ------------------------------------------------------------
+RUN apt-get update && apt-get install -y locales \
+    && locale-gen en_US.UTF-8 \
+    && update-locale LANG=en_US.UTF-8 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
+
+# ------------------------------------------------------------
+# 2) Firefox ESR
+# ------------------------------------------------------------
+RUN add-apt-repository ppa:mozillateam/ppa \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends firefox-esr \
+    && update-alternatives --set x-www-browser /usr/bin/firefox-esr \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------------
+# 2.5) Python + pip + mozregression
+# ------------------------------------------------------------
+RUN apt-get update && apt-get install -y python3 python3-pip \
+    && pip3 install --no-cache-dir mozregression \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------------
+# 3) Create non-root user
+# ------------------------------------------------------------
+RUN useradd -ms /bin/bash myuser \
+    && echo "myuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+USER myuser
+WORKDIR /home/myuser
+
+# ------------------------------------------------------------
+# 4) Set VNC password
+# ------------------------------------------------------------
+RUN x11vnc -storepasswd secret /home/myuser/.vncpass
+
+# ------------------------------------------------------------
+# 5) Startup: Xvfb + x11vnc + XFCE session
+# ------------------------------------------------------------
+EXPOSE 5900
+CMD ["/bin/sh", "-c", "\
+    Xvfb :99 -screen 0 1280x800x24 >/dev/null 2>&1 & \
+    x11vnc -display :99 -forever -rfbauth /home/myuser/.vncpass -listen 0.0.0.0 -rfbport 5900 >/dev/null 2>&1 & \
+    export DISPLAY=:99 && startxfce4 >/dev/null 2>&1 & \
+    sleep 2 && echo 'Container running!' && tail -f /dev/null \
+"]
+
+# ------------------------------------------------------------
+# 6) Development tools + Python env + Electron runtime deps
+# ------------------------------------------------------------
+USER root
+RUN apt-get update && apt-get install -y \
+    build-essential g++ make pkg-config \
+    libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev \
+    fakeroot rpm \
+    python3 python3-pip python3-venv python-is-python3 \
+    git libgconf-2-4 \
+    curl ca-certificates \
+    libgtk-3-0 libnss3 libasound2 libxss1 libxtst6 \
+    libxrandr2 libglib2.0-0 \
+    fonts-liberation fonts-dejavu \
+    unzip jq \
+    && python3 -m pip install --upgrade pip setuptools wheel \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------------
+# 7) Install Node.js 22 + Yarn (Docker-native)
+# ------------------------------------------------------------
+USER root
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+ && apt-get install -y nodejs \
+ && corepack enable \
+ && corepack prepare yarn@stable --activate
+
+
+## ------------------------------------------------------------
+## 7) Install NVM + Node.js 22 + Yarn
+## ------------------------------------------------------------
+#USER myuser
+#ENV NVM_DIR=/home/myuser/.nvm
+#
+#RUN mkdir -p "$NVM_DIR" \
+#    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \
+#    && . "$NVM_DIR/nvm.sh" \
+#    && nvm install 22 \
+#    && nvm alias default 22 \
+#    && echo 'export NVM_DIR=\"$HOME/.nvm\"' >> ~/.bashrc \
+#    && echo '[ -s \"$NVM_DIR/nvm.sh\" ] && \. \"$NVM_DIR/nvm.sh\"' >> ~/.bashrc \
+#    && . "$NVM_DIR/nvm.sh" && npm install -g yarn
+
+
+# a) Run to to create an image by default platform: docker build -t cua-image .
+#       Intel chip: "docker build --platform=linux/amd64 -t cua-image ."
+#       M4 chip: "docker build --platform=linux/arm64 -t cua-image ."
+
+# b) Run to run the image by default platform: docker run --rm -it --name cua-image -p 5900:5900 -e DISPLAY=:99 cua-image
+#       Intel chip: "docker run --platform=linux/amd64 --rm -it --name cua-image -p 5900:5900 -e DISPLAY=:99 cua-image"
+#       M4 chip: "docker run --platform=linux/arm64 --rm -it --name cua-image -p 5900:5900 -e DISPLAY=:99 cua-image"
+
+# c) Open a folder on the host computer
+
+# d) Type "Command + k" to open the GUI
+
+# e) vnc://localhost:5900
+
+# f) Input password: 'secret'
