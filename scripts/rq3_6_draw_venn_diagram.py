@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 from matplotlib_venn import venn2
 
 if __name__ == "__main__":
+    # # Uncomment to choose the repository
     # # reponame = APP_NAME_ZETTLR
     # # reponame = APP_NAME_JABREF
     # # reponame = APP_NAME_GODOT
@@ -11,17 +12,17 @@ if __name__ == "__main__":
     # A = set(range(52))
     # B = set(range(33, 87))
     #
-    # fig, ax = plt.subplots(figsize=(4.5, 3))  # 👈 控制整体空间
+    # fig, ax = plt.subplots(figsize=(4.5, 3))  # 👈 Control overall figure size
     # venn2([A, B], set_labels=('Our Approach', 'Ground Truth'), ax=ax)
     #
-    # ax.set_aspect(0.2)  # 👈 小于 1 = 横向压缩（变扁）
+    # ax.set_aspect(0.2)  # 👈 <1 = compress horizontally (flatten)
     #
     # plt.tight_layout()
     # plt.savefig("venn_firefox_groundtruth.pdf")
     # plt.show()
 
 
-    A = set(range(42))  # TP detected bugs
+    A = set(range(42))  # True positives detected by our approach
     B = set(range(29, 75))  # Ground-truth bugs
 
     fig, ax = plt.subplots(figsize=(4.5, 3))
@@ -32,21 +33,26 @@ if __name__ == "__main__":
         ax=ax
     )
 
-    v.get_patch_by_id('10').set_color('#55A868')  # 学术绿（Our Approach）
-    v.get_patch_by_id('01').set_color('#E0E0E0')  # 浅灰（Ground Truth）
-    v.get_patch_by_id('11').set_color('#B7D8C2')  # 绿灰交集
+    # Set colors for the Venn diagram
+    # v.get_patch_by_id('10').set_color('#55A868')  # Academic green (Our Approach)
+    # v.get_patch_by_id('01').set_color('#E0E0E0')  # Light gray (Ground Truth)
+    # v.get_patch_by_id('11').set_color('#B7D8C2')  # Green-gray overlap
+
+    v.get_patch_by_id('10').set_color('#F6E4E8')  # Left: light pink from figure
+    v.get_patch_by_id('01').set_color('#E1E1E1')  # Right: light gray
+    v.get_patch_by_id('11').set_color('#EFD5DC')  # Intersection: slightly darker pink
 
     for pid in ['10', '01', '11']:
-        v.get_patch_by_id(pid).set_alpha(0.85)
+        v.get_patch_by_id(pid).set_alpha(0.85)  # Set transparency
 
-    # 🧠 明确语义的标题
+    # 🧠 Clear, descriptive title
     ax.set_title(
         "Overlap between Bugs Detected by Our Approach (TPs)\n"
         "and Ground-Truth Introduced Bugs",
         fontsize=11
     )
 
-    # 📝 图内注释（强烈推荐）
+    # 📝 Inline explanation (highly recommended)
     ax.text(
         0.5, -0.18,
         "Left: bugs detected by our approach (true positives only)\n"
@@ -56,9 +62,7 @@ if __name__ == "__main__":
         transform=ax.transAxes
     )
 
-    ax.set_aspect(0.22)
+    ax.set_aspect(0.22)  # Compress diagram horizontally
     plt.tight_layout()
     plt.savefig("venn_firefox_groundtruth.pdf")
     plt.show()
-
-
