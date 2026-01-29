@@ -91,17 +91,17 @@ if __name__ == "__main__":
                 detect_cost += cost
                 total_duration += duration
                 total_cost += cost
-            # ---------- Post-processing (belongs to Detection) ----------
-            for path in pr_folder.rglob("post_processor.json"):
-                output = FileUtil.load_json(path)
+        # ---------- Post-processing (belongs to Detection) ----------
+        for path in pr_folder.rglob("post_processor.json"):
+            output = FileUtil.load_json(path)
 
-                duration = output[Placeholder.DURATION_MINS]
-                cost = output[Placeholder.COST][Placeholder.TOTAL_COST]
+            duration = output[Placeholder.DURATION_MINS]
+            cost = output[Placeholder.COST][Placeholder.TOTAL_COST]
 
-                detect_duration += duration
-                detect_cost += cost
-                total_duration += duration
-                total_cost += cost
+            detect_duration += duration
+            detect_cost += cost
+            total_duration += duration
+            total_cost += cost
 
 
     # ===================== Reporting =====================

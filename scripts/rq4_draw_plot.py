@@ -20,8 +20,8 @@ if __name__ == "__main__":
     # Data (percentages)
     phases = ["Test Scenario Generator", "Test Scenario Executor", "Bug Detector"]
 
-    time_pct = [6.9, 40.8, 52.3]  # Execution time breakdown
-    cost_pct = [4.1, 59.3, 36.7]  # Monetary cost breakdown
+    time_pct = [7.5, 44.4, 48.1] # Execution time breakdown
+    cost_pct = [4.3, 62.0, 33.7] # Monetary cost breakdown
 
     # Colors matching the Venn diagram style
     colors = ["#E3E3E3", "#F6D6DE", "#E9A9BC"]
