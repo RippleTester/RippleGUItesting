@@ -1,6 +1,6 @@
 # RippleGUItester: Change-Aware Exploratory Testing
 
-RippleGUItester is a **change-driven exploratory GUI testing system**.  
+RippleGUItester is a **change-driven exploratory GUI-Level testing system**.  
 It treats a code change as the epicenter of a *ripple effect* and systematically explores its broader, user-visible impacts through the graphical user interface (GUI).
 
 ---
